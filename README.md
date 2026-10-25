@@ -3,7 +3,7 @@
 A post-hoc analysis pipeline that goes beyond pass/fail metrics to measure *how well* an LLM red-team agent attacks a network. It replays an Incalmo action log to reconstruct an oracle attack graph and optimal path, aligns the agent's actual trajectory against that path, and labels every deviation with a failure category (irrelevant, redundant, dead-end, and others). It outputs annotated traces, summary metrics such as path efficiency and waste ratio, and visualizations that show where the agent drifted from optimal behavior.
 
 **18-731 Network Security, Carnegie Mellon University, Spring 2026**  
-Christian Wong, Karthik Chakkalakal, Cora Marcet
+Karthik Chakkalakal, Christian Wong, Cora Marcet
 
 ## About this repository
 
@@ -51,16 +51,13 @@ See the [folder README](optimal_path_analysis/README.md) for options, outputs an
 
 ## Contributions
 
-- **Karthik Chakkalakal:** majority of the pipeline code (the optimal path solver, the trace alignment engine, the `main.py` script tying the pipeline together, and later fixes to the taxonomy labels), plus the Haiku 4.5 run and the synthetic injection outputs.
+- **Karthik Chakkalakal:** most of the pipeline code: the optimal path solver, trace alignment engine, main.py, the animation, and the current versions of the classifier, report and graph scripts; plus the Haiku 4.5 run and the synthetic injection outputs.
 - **Christian Wong** contributed the initial taxonomy classifier and log parser.
-- **Cora Marcet** wrote the first summary report generator (`generate_report.py`, which builds the summary from the classified trace) and the graph visualization scripts.
+- **Cora Marcet** wrote the first versions of the summary report generator (`generate_report.py`, which builds the summary from the classified trace) and the trajectory graph script.
 
 ---
 
-
-
-
-# Original Incalmo README
+## Original Incalmo README
 
 # Incalmo: An Autonomous LLM-assisted System for Red Teaming Multi-Host Networks
 
