@@ -17,7 +17,7 @@ The pipeline runs on a standard Incalmo `action_log.jsonl` and has three modules
 
 - **Oracle Solver** replays every event in the log to rebuild the network as the agent experienced it (hosts, subnets, credentials, CVEs, infection chains), then runs BFS to find the shortest action sequence that exfiltrates all critical data.
 - **Alignment Engine** compares the actual trace to the optimal path with a set-based parallel walk, tagging each step as PRODUCTIVE, DEVIATION or FAILED_EXECUTION. Productive steps taken out of order (e.g. batching phases across hosts) are flagged rather than counted as waste.
-- **Taxonomy Classifier** resolves each non-productive step into IRRELEVANT, FAILED_EXECUTION, REDUNDANT (re-doing completed work, our "frontier decay" signal), DEAD_END or SUBOPTIMAL_ORDERING, using the oracle graph and a running memory of completed actions.
+- **Taxonomy Classifier** resolves each non-productive step into IRRELEVANT, FAILED_EXECUTION, REDUNDANT (re-doing completed work, our "frontier decay" signal), DEAD_END or SUBOPTIMAL_ORDERING, using the oracle graph and a running memory of completed actions. When no attack graph can be built (as in the Haiku run), it falls back to coarser labels, using a single SUBOPTIMAL_EXPLORATION label for non-redundant deviations.
 
 Outputs: `analysis_report.json`, `aligned_trace.json`, `classified_trace.json`, `summary_report.json`, plus a `trajectory_timeline.png` and an optional side-by-side `attack_trajectory.mp4`.
 
@@ -37,7 +37,7 @@ Sonnet's 9 wasted steps all fell in one early block (steps 2–10): it picked th
 ## Limitations
 
 - Results come from only two runs, in one environment, with one trial per model, so they are suggestive rather than conclusive.
-- DEAD_END almost never fires on EquifaxLarge, because every host can re-pivot to a credential-bearing host; it should be more informative on more partitioned networks.
+- DEAD_END did not fire in the Sonnet run because every host on EquifaxLarge can re-pivot to a credential-bearing host (the Haiku run had no attack graph, so it could not fire there); it should be more informative on more partitioned networks.
 - The checks for FindInformationOnAHost and EscalatePrivilege are permissive: they accept any host with an inbound edge rather than only hosts actually compromised at that point in the trace.
 
 ## Running it
