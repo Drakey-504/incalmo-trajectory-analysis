@@ -1,3 +1,66 @@
+# Stateful Trajectory Analysis of LLM-Driven Network Attacks
+
+A post-hoc analysis pipeline that goes beyond pass/fail metrics to measure *how well* an LLM red-team agent attacks a network. It replays an Incalmo action log to reconstruct an oracle attack graph and optimal path, aligns the agent's actual trajectory against that path, and labels every deviation with a failure category (irrelevant, redundant, dead-end, and others). It outputs annotated traces, summary metrics such as path efficiency and waste ratio, and visualizations that show where the agent drifted from optimal behavior.
+
+**18-731 Network Security, Carnegie Mellon University, Spring 2026**  
+Christian Wong, Karthik Chakkalakal, Cora Marcet
+
+## About this repository
+
+This repository is a fork of [Incalmo](https://github.com/bsinger98/Incalmo), an autonomous LLM-assisted red-teaming system from CMU CyLab ([paper](https://arxiv.org/abs/2501.16466)). We did not modify Incalmo itself, apart from a small update to the Haiku model name.
+
+Our code lives in [`optimal_path_analysis/`](optimal_path_analysis/). See [that folder's README](optimal_path_analysis/README.md) for full details.
+
+## How it works
+
+The pipeline runs on a standard Incalmo `action_log.jsonl` and has three modules:
+
+- **Oracle Solver** replays every event in the log to rebuild the network as the agent experienced it (hosts, subnets, credentials, CVEs, infection chains), then runs BFS to find the shortest action sequence that exfiltrates all critical data.
+- **Alignment Engine** compares the actual trace to the optimal path with a set-based parallel walk, tagging each step as PRODUCTIVE, DEVIATION or FAILED_EXECUTION. Productive steps taken out of order (e.g. batching phases across hosts) are flagged rather than counted as waste.
+- **Taxonomy Classifier** resolves each non-productive step into IRRELEVANT, FAILED_EXECUTION, REDUNDANT (re-doing completed work, our "frontier decay" signal), DEAD_END or SUBOPTIMAL_ORDERING, using the oracle graph and a running memory of completed actions.
+
+Outputs: `analysis_report.json`, `aligned_trace.json`, `classified_trace.json`, `summary_report.json`, plus a `trajectory_timeline.png` and an optional side-by-side `attack_trajectory.mp4`.
+
+## Results
+
+We ran the pipeline on two traces from the MHBench EquifaxLarge environment (~50 hosts, 48 goal databases):
+
+| Run | Steps | Goals reached | Path efficiency | Wasted steps |
+|---|---|---|---|---|
+| Claude Sonnet 4 (sample log from Incalmo) | 156 | 48/48 | 0.942 | 9 (3 irrelevant, 3 redundant, 3 suboptimal ordering) |
+| Claude Haiku 4.5 (our run) | 69 | 0/48 | undefined | 69 (33 failed execution, 22 redundant, 14 suboptimal exploration) |
+
+Sonnet's 9 wasted steps all fell in one early block (steps 2–10): it picked the wrong web server, tried lateral moves along invalid edges, and re-scanned a subnet it had already mapped, then ran the remaining 146 steps without deviation. Haiku never exploited the Struts CVE and stalled at lateral movement, so no attack graph could be reconstructed; path efficiency is undefined because the solver found no goals, and the classifier fell back to graph-free labels.
+
+**Synthetic validation:** we injected 10 known failures into the Sonnet trace, and the pipeline flagged all 10 as non-productive. Some were assigned a different failure category than the one we injected, so this validates detection, not exact categorization.
+
+## Limitations
+
+- Results come from only two runs, in one environment, with one trial per model, so they are suggestive rather than conclusive.
+- DEAD_END almost never fires on EquifaxLarge, because every host can re-pivot to a credential-bearing host; it should be more informative on more partitioned networks.
+- The checks for FindInformationOnAHost and EscalatePrivilege are permissive: they accept any host with an inbound edge rather than only hosts actually compromised at that point in the trace.
+
+## Running it
+
+```bash
+cd optimal_path_analysis
+python main.py <path/to/action_log.jsonl>
+```
+
+See the [folder README](optimal_path_analysis/README.md) for options, outputs and setup.
+
+## Contributions
+
+- **Karthik Chakkalakal:** majority of the pipeline code (the optimal path solver, the trace alignment engine, the `main.py` script tying the pipeline together, and later fixes to the taxonomy labels), plus the Haiku 4.5 run and the synthetic injection outputs.
+- **Christian Wong** contributed the initial taxonomy classifier and log parser.
+- **Cora Marcet** wrote the first summary report generator (`generate_report.py`, which builds the summary from the classified trace) and the graph visualization scripts.
+
+---
+
+
+
+
+# Original Incalmo README
 
 # Incalmo: An Autonomous LLM-assisted System for Red Teaming Multi-Host Networks
 
