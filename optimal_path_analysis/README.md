@@ -7,7 +7,7 @@ No modifications to Incalmo required. Just Python 3.10+, `matplotlib`, and `netw
 ## Setup
 
 ```
-post_hoc_analysis/
+optimal_path_analysis/
 ├── main.py                       ← run this
 ├── optimal_path_solver.py        ← Module 1
 ├── trace_alignment_diff.py       ← Module 2
